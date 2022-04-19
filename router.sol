@@ -63,8 +63,8 @@ library TransferHelper {
 pragma solidity >=0.6.2;
 
 interface IUniswapV2Router01 {
-    function factory() external pure returns (address);
-    function WETH() external pure returns (address);
+    function factory() external view returns (address);
+    function WETH() external view returns (address);
 
     function addLiquidity(
         address tokenA,
@@ -162,8 +162,8 @@ pragma solidity >=0.6.2;
 
 
 interface IUniswapV2Router02 is IUniswapV2Router01 {
-    function vault() external pure returns (address);
-    function owner() external pure returns (address);
+    function vault() external view returns (address);
+    function owner() external view returns (address);
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
         uint liquidity,
@@ -417,9 +417,10 @@ pragma solidity >=0.6.6;
 
 contract UniswapV2Router02 is IUniswapV2Router02 {
     using SafeMath for uint;
+  bool internal initialized;
 
-    address public immutable override factory;
-    address public immutable override WETH;
+    address public override factory;
+    address public override WETH;
     address public override vault;
     address public override owner;
     mapping(address => mapping(address => uint)) private _pools;
@@ -429,10 +430,15 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         _;
     }
 
-    constructor(address _factory, address _WETH) public {
+    function initialize(
+        address _factory,
+        address _weth
+    ) public {
+        require(!initialized, "FiatToken: contract is already initialized");
         factory = _factory;
+        WETH = _weth;
         owner = msg.sender;
-        WETH = _WETH;
+        initialized = true;
     }
 
     receive() external payable {
