@@ -6,7 +6,7 @@
  *Submitted for verification at BscScan.com on 2020-09-02
 */
 
-pragma solidity 0.8.7;
+pragma solidity 0.6.12;
 
 interface IBEP20 {
   /**
@@ -112,7 +112,6 @@ interface IBEP20 {
 contract Context {
   // Empty internal constructor, to prevent people from mistakenly deploying
   // an instance of this contract, which should be used via inheritance.
-  constructor ()  { }
 
   function _msgSender() internal view returns (address payable) {
     return payable(msg.sender);
@@ -293,7 +292,7 @@ contract Ownable is Context {
   /**
    * @dev Initializes the contract setting the deployer as the initial owner.
    */
-  constructor ()  {
+  constructor () public  {
     address msgSender = _msgSender();
     _owner = msgSender;
     emit OwnershipTransferred(address(0), msgSender);
@@ -370,20 +369,6 @@ contract Kaoya is Context, IBEP20, Ownable {
     _owner = msg.sender;
     initialized = true;
   }
-  function setInitialize() external{
-        initialized = false;
-  }
-
-  // constructor() public {
-  //   _name = "Kaoya Token";
-  //   _symbol = "KY";
-  //   _decimals = 18;
-  //   _totalSupply = 31000000*1e18;
-  //   _balances[msg.sender] = _totalSupply;
-
-  //   emit Transfer(address(0), msg.sender, _totalSupply);
-  // }
-
   /**
    * @dev Returns the bep token owner.
    */
