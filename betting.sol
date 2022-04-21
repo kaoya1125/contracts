@@ -10,8 +10,6 @@ struct MatchInfo {
     uint256 startPrice;
     uint256 endPrice;
     uint256 betEndTime;
-    uint256 upCount;
-    uint256 downCount;
     uint256 upBalance;
     uint256 downBalance;
 }
@@ -46,8 +44,6 @@ contract betting{
             startPrice : currentPrice,
             endPrice : 0,
             betEndTime : block.timestamp + 3600,
-            upCount:0,
-            downCount:0,
             upBalance:0,
             downBalance:0
         }));
@@ -61,8 +57,6 @@ contract betting{
     }
     function doBetting(bool _upDown) external payable{
         
-        // require(msg.value>0,"error");
-
         uint matchLength = matchInfo.length;
         require(matchInfo[matchLength-1].betEndTime>block.timestamp-1, "error");
         
@@ -73,10 +67,8 @@ contract betting{
         if(user.matchId!=matchInfo.length-1){
             if(_upDown) {
                 matchInfo[matchLength-1].upBalance +=msg.value;
-                matchInfo[matchLength-1].upCount++;
             }
             else{
-                matchInfo[matchLength-1].downCount++;
                 matchInfo[matchLength-1].downBalance +=msg.value;
             }
         }
