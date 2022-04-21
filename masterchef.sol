@@ -187,7 +187,6 @@ contract MasterChef is Ownable {
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 kaoyaReward = multiplier.mul(kaoyaPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        kaoya.mint(kaoyaReward);
         pool.accKaoyaPerShare = pool.accKaoyaPerShare.add(kaoyaReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
