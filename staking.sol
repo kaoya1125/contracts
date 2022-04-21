@@ -2,7 +2,6 @@ pragma solidity ^0.8.0;
 import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol';
 import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeMath.sol';
 import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Address.sol';
-import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeMath.sol';
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
@@ -207,8 +206,6 @@ contract Staking is Ownable {
     // The block number when StakeToken mining ends.
     uint256 public immutable endBlock;
 
-    // Burn address
-    address public burnAddress;
     // Treasury address
     address public divPoolAddress;
 
@@ -217,7 +214,6 @@ contract Staking is Ownable {
 
     //Fees to burn and treasury
     uint256 public immutable divPoolFee;
-    uint256 public immutable divBurnFee;
 
     uint256 public threshold = 1000*1e18;
 
@@ -234,29 +230,24 @@ contract Staking is Ownable {
     event ReferralPaid(address indexed user, address indexed userTo, uint256 reward);
     event SetRewardReferralAddress(address indexed sender, address indexed referralAddress);
     event SetDevPoolAddress(address indexed sender, address indexed divPoolAddress);
-    event SetBurnAddress(address indexed sender, address indexed burnAddress);
 
     constructor(
         IBEP20 _stakeToken, //token which will be staked
         IBEP20 _rewardToken, //token which will be a reward for staking
-        address _burnAddress, //address for burn fee
         address _divPoolAddress, //address for treasury fee
         uint256 _rewardPerBlock, //number of token rewards per block
         uint256 _startBlock, //when the pool will start
         uint256 _endBlock, // when the pool will end
-        uint256 _divPoolFee, //fee to treasury on deposit
-        uint256 _divBurnFee //fee to burn tokens
+        uint256 _divPoolFee //fee to treasury on deposit
     ) {
-        require(_divPoolFee.add(_divBurnFee) <= 500, 'Total fee cannot be higher than 5%');
+        require(_divPoolFee <= 500, 'Total fee cannot be higher than 5%');
         stakeToken = _stakeToken;
         rewardToken = _rewardToken;
-        burnAddress = _burnAddress;
         divPoolAddress = _divPoolAddress;
         rewardPerBlock = _rewardPerBlock;
         startBlock = _startBlock;
         endBlock = _endBlock;
         divPoolFee = _divPoolFee;
-        divBurnFee = _divBurnFee;
 
         // staking pool
         poolInfo = PoolInfo({
@@ -420,11 +411,6 @@ contract Staking is Ownable {
         emit SetDevPoolAddress(msg.sender, _divPoolAddress);
     }
 
-    // Update burn address by the owner.
-    function setBurnAddress(address _burnAddr) public onlyOwner {
-        burnAddress = _burnAddr;
-        emit SetBurnAddress(msg.sender, _burnAddr);
-    }
     function getUserInfo(address user) public returns(UserInfo memory result){
         UserInfo memory result = userInfo[user];
         return result;
