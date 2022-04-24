@@ -84,7 +84,7 @@ contract betting{
         MatchInfo storage _match = matchInfo[matchId];
 
         uint256 userBalance;
-        if(_match.startPrice<_match.endPrice)
+        if(_match.startPrice<=_match.endPrice)
             userBalance = user.balance*975*(_match.upBalance + _match.downBalance)/(_match.upBalance*1000);
         else
             userBalance = user.balance*975*(_match.upBalance + _match.downBalance)/(_match.downBalance*1000);
