@@ -139,7 +139,7 @@ contract UniswapV2ERC20 is IUniswapV2ERC20 {
     using SafeMath for uint;
 
     string public override constant name = 'KaoyaSwap';
-    string public override constant symbol = 'SALP';
+    string public override constant symbol = 'KALP';
     uint8 public override constant decimals = 18;
     uint  public override totalSupply;
     mapping(address => uint) public override balanceOf;
