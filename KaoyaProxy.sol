@@ -1,10 +1,4 @@
-/**
- *Submitted for verification at Etherscan.io on 2018-08-03
-*/
-
-pragma solidity ^0.4.24;
-
-// File: zos-lib/contracts/upgradeability/Proxy.sol
+pragma solidity ^0.6.12;
 
 /**
  * @title Proxy
@@ -13,19 +7,23 @@ pragma solidity ^0.4.24;
  * It defines a fallback function that delegates all calls to the address
  * returned by the abstract _implementation() internal function.
  */
-contract Proxy {
+abstract contract Proxy {
+  address wbnb = 0xD7AE40e5EF906caD1633bDBFE47cCe04c4fcf28B;
   /**
    * @dev Fallback function.
    * Implemented entirely in `_fallback`.
    */
-  function () payable external {
+  fallback() payable external {
     _fallback();
+  }
+  receive() payable external{
+    assert(msg.sender == wbnb); // only accept ETH via fallback from the WETH contract
   }
 
   /**
    * @return The Address of the implementation.
    */
-  function _implementation() internal view returns (address);
+  function _implementation() internal virtual view returns (address);
 
   /**
    * @dev Delegates execution to an implementation contract.
@@ -38,19 +36,19 @@ contract Proxy {
       // Copy msg.data. We take full control of memory in this inline assembly
       // block because it will not return to Solidity code. We overwrite the
       // Solidity scratch pad at memory position 0.
-      calldatacopy(0, 0, calldatasize)
+      calldatacopy(0, 0, calldatasize())
 
       // Call the implementation.
       // out and outsize are 0 because we don't know the size yet.
-      let result := delegatecall(gas, implementation, 0, calldatasize, 0, 0)
+      let result := delegatecall(gas(), implementation, 0, calldatasize(), 0, 0)
 
       // Copy the returned data.
-      returndatacopy(0, 0, returndatasize)
+      returndatacopy(0, 0, returndatasize())
 
       switch result
       // delegatecall returns 0 on error.
-      case 0 { revert(0, returndatasize) }
-      default { return(0, returndatasize) }
+      case 0 { revert(0, returndatasize()) }
+      default { return(0, returndatasize()) }
     }
   }
 
@@ -59,7 +57,7 @@ contract Proxy {
    * Can be redefined in derived contracts to add functionality.
    * Redefinitions must call super._willFallback().
    */
-  function _willFallback() internal {
+  function _willFallback() internal virtual {
   }
 
   /**
@@ -101,8 +99,6 @@ library AddressUtils {
 
 }
 
-// File: zos-lib/contracts/upgradeability/UpgradeabilityProxy.sol
-
 /**
  * @title UpgradeabilityProxy
  * @dev This contract implements a proxy that allows to change the
@@ -133,11 +129,7 @@ contract UpgradeabilityProxy is Proxy {
     _setImplementation(_implementation);
   }
 
-  /**
-   * @dev Returns the current implementation.
-   * @return Address of the current implementation
-   */
-  function _implementation() internal view returns (address impl) {
+  function _implementation() internal override view returns (address impl) {
     bytes32 slot = IMPLEMENTATION_SLOT;
     assembly {
       impl := sload(slot)
@@ -167,9 +159,6 @@ contract UpgradeabilityProxy is Proxy {
     }
   }
 }
-
-// File: zos-lib/contracts/upgradeability/AdminUpgradeabilityProxy.sol
-
 /**
  * @title AdminUpgradeabilityProxy
  * @dev This contract combines an upgradeability proxy with an authorization
@@ -220,66 +209,37 @@ contract AdminUpgradeabilityProxy is UpgradeabilityProxy {
   /**
    * @return The address of the proxy admin.
    */
-  function admin() external view ifAdmin returns (address) {
+  function admin() external view returns (address) {
     return _admin();
   }
 
   /**
    * @return The address of the implementation.
    */
-  function implementation() external view ifAdmin returns (address) {
+  function implementation() external view  returns (address) {
     return _implementation();
   }
 
-  /**
-   * @dev Changes the admin of the proxy.
-   * Only the current admin can call this function.
-   * @param newAdmin Address to transfer proxy administration to.
-   */
   function changeAdmin(address newAdmin) external ifAdmin {
     require(newAdmin != address(0), "Cannot change the admin of a proxy to the zero address");
     emit AdminChanged(_admin(), newAdmin);
     _setAdmin(newAdmin);
   }
+  function setwbnb(address _wbnb) external ifAdmin{
+    wbnb = _wbnb;
+  }
 
-  /**
-   * @dev Upgrade the backing implementation of the proxy.
-   * Only the admin can call this function.
-   * @param newImplementation Address of the new implementation.
-   */
   function upgradeTo(address newImplementation) external ifAdmin {
     _upgradeTo(newImplementation);
   }
 
-  /**
-   * @dev Upgrade the backing implementation of the proxy and call a function
-   * on the new implementation.
-   * This is useful to initialize the proxied contract.
-   * @param newImplementation Address of the new implementation.
-   * @param data Data to send as msg.data in the low level call.
-   * It should include the signature and the parameters of the function to be
-   * called, as described in
-   * https://solidity.readthedocs.io/en/develop/abi-spec.html#function-selector-and-argument-encoding.
-   */
-  function upgradeToAndCall(address newImplementation, bytes data) payable external ifAdmin {
-    _upgradeTo(newImplementation);
-    require(address(this).call.value(msg.value)(data));
-  }
 
-  /**
-   * @return The admin slot.
-   */
   function _admin() internal view returns (address adm) {
     bytes32 slot = ADMIN_SLOT;
     assembly {
       adm := sload(slot)
     }
   }
-
-  /**
-   * @dev Sets the address of the proxy admin.
-   * @param newAdmin Address of the new proxy admin.
-   */
   function _setAdmin(address newAdmin) internal {
     bytes32 slot = ADMIN_SLOT;
 
@@ -288,45 +248,13 @@ contract AdminUpgradeabilityProxy is UpgradeabilityProxy {
     }
   }
 
-  /**
-   * @dev Only fall back when the sender is not the admin.
-   */
-  function _willFallback() internal {
-    require(msg.sender != _admin(), "Cannot call fallback function from the proxy admin");
+  function _willFallback() internal override {
     super._willFallback();
   }
 }
 
-// File: contracts/FiatTokenProxy.sol
+pragma solidity ^0.6.12;
 
-/**
-* Copyright CENTRE SECZ 2018
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy 
-* of this software and associated documentation files (the "Software"), to deal 
-* in the Software without restriction, including without limitation the rights 
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
-* copies of the Software, and to permit persons to whom the Software is furnished to 
-* do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all 
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-
-pragma solidity ^0.4.24;
-
-
-/**
- * @title FiatTokenProxy
- * @dev This contract proxies FiatToken calls and enables FiatToken upgrades
-*/ 
 contract KaoyaProxy is AdminUpgradeabilityProxy {
     constructor(address _implementation) public AdminUpgradeabilityProxy(_implementation) {
     }
