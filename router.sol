@@ -1,12 +1,4 @@
-/**
- *Submitted for verification at BscScan.com on 2022-03-25
-*/
 
-/**
- *Submitted for verification at BscScan.com on 2021-02-26
-*/
-
-// File: @Kaoyaswap/core/contracts/interfaces/IUniswapV2Factory.sol
 
 pragma solidity >=0.5.0;
 
@@ -162,7 +154,6 @@ pragma solidity >=0.6.2;
 
 
 interface IUniswapV2Router02 is IUniswapV2Router01 {
-    function vault() external view returns (address);
     function owner() external view returns (address);
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
@@ -204,13 +195,6 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
     ) external;
     function changeOwner(
         address vaultAddress
-    ) external;
-    function setVault(
-        address vaultAddress
-    ) external;
-    function take(
-        address token, 
-        uint amount
     ) external;
     function getTokenInPair(address pair, address token) external view returns (uint balance);    
 }
@@ -313,7 +297,7 @@ library UniswapV2Library {
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(token0, token1)),
-                hex'b7b88947a6a423e784cb5512eccdfee6426797f5f681f521bc1687e844ef15be' // init code hash
+                hex'99038ac7f402748476d569617659e394a400834446b13018f8ee099b40439c3b' // init code hash
             ))));
     }
 
@@ -421,7 +405,6 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
 
     address public override factory;
     address public override WETH;
-    address public override vault;
     address public override owner;
     mapping(address => mapping(address => uint)) private _pools;
 
@@ -490,6 +473,8 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         if (IUniswapV2Factory(factory).getPair(tokenA, tokenB) == address(0)) {
             IUniswapV2Factory(factory).createPair(tokenA, tokenB);
         }
+        require(amountADesired>amountAMin,"error");
+        require(amountBDesired>amountBMin,"error");
         (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(factory, tokenA, tokenB);
         if (reserveA == 0 && reserveB == 0) {
             (amountA, amountB) = (amountADesired, amountBDesired);
@@ -861,25 +846,7 @@ contract UniswapV2Router02 is IUniswapV2Router02 {
         owner = _owner;
     }
 
-    function setVault(
-        address vaultAddress
-    ) 
-        external
-        override
-    {
-        require(msg.sender == owner,'UniswapV2Router: FORBIDDEN');
-        vault = vaultAddress;
-    }
-
-    function take(address token, uint amount) 
-        external
-        virtual
-        override
-    {
-        require(msg.sender == vault,'UniswapV2Router: FORBIDDEN');
-        TransferHelper.safeTransfer(token, vault, amount);
-    }
-
+    
     function getTokenInPair(address pair,address token) 
         public
         view
