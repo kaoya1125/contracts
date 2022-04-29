@@ -57,12 +57,12 @@ contract MasterChef is Ownable {
     }
 
     // The kaoya TOKEN!
-    Kaoya public kaoya;
+    Kaoya public immutable kaoya;
 
     // Block number when bonus kaoya period ends.
-    uint256 public bonusEndBlock;
+    uint256 public immutable bonusEndBlock;
     // kaoya tokens created per block.
-    uint256 public kaoyaPerBlock;
+    uint256 public immutable kaoyaPerBlock;
     // Bonus muliplier for early kaoya makers.
     uint256 public constant BONUS_MULTIPLIER = 10;
     // The migrator contract. It has a lot of power. Can only be set through governance (owner).
@@ -75,7 +75,7 @@ contract MasterChef is Ownable {
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
     // The block number when kaoya mining starts.
-    uint256 public startBlock;
+    uint256 public immutable startBlock;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -99,10 +99,9 @@ contract MasterChef is Ownable {
 
     // Add a new lp to the pool. Can only be called by the owner.
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
-    function add(uint256 _allocPoint, IERC20 _lpToken, bool _withUpdate) public onlyOwner {
-        if (_withUpdate) {
-            massUpdatePools();
-        }
+    function add(uint256 _allocPoint, IERC20 _lpToken) public onlyOwner {
+        massUpdatePools();
+        checkPoolDuplicate(_lpToken);
         uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
         poolInfo.push(PoolInfo({
@@ -114,10 +113,8 @@ contract MasterChef is Ownable {
     }
 
     // Update the given pool's kaoya allocation point. Can only be called by the owner.
-    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
-        if (_withUpdate) {
-            massUpdatePools();
-        }
+    function set(uint256 _pid, uint256 _allocPoint) public onlyOwner {
+        massUpdatePools();
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         poolInfo[_pid].allocPoint = _allocPoint;
     }
@@ -153,7 +150,7 @@ contract MasterChef is Ownable {
     }
 
     // View function to see pending kaoyas on frontend.
-    function pendingKaoya(uint256 _pid, address _user) external view returns (uint256) {
+    function pendingKaoya(uint256 _pid, address _user) external validPool(_pid) view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accKaoyaPerShare = pool.accKaoyaPerShare;
@@ -187,6 +184,7 @@ contract MasterChef is Ownable {
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 kaoyaReward = multiplier.mul(kaoyaPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        // kaoya.mint(kaoyaReward);
         pool.accKaoyaPerShare = pool.accKaoyaPerShare.add(kaoyaReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
@@ -221,13 +219,13 @@ contract MasterChef is Ownable {
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _pid) public {
+    function emergencyWithdraw(uint256 _pid) public validPool(_pid) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, _pid, user.amount);
         user.amount = 0;
         user.rewardDebt = 0;
+        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
+        emit EmergencyWithdraw(msg.sender, _pid, user.amount);
     }
 
     // Safe kaoya transfer function, just in case if rounding error causes pool to not have enough kaoyas.
@@ -238,5 +236,15 @@ contract MasterChef is Ownable {
         } else {
             kaoya.transfer(_to, _amount);
         }
+    }
+    function checkPoolDuplicate(IERC20 _lpToken) internal{
+        uint256 length = poolInfo.length;
+        for(uint256 pid=0; pid < length; pid++){
+            require(poolInfo[pid].lpToken !=_lpToken,"add existing pool?");
+        }
+    }
+    modifier validPool(uint256 _pid){
+        require(_pid<poolInfo.length,"pool exists?");
+        _;
     }
 }
