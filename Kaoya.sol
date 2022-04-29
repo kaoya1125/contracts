@@ -1,12 +1,5 @@
-/**
- *Submitted for verification at BscScan.com on 2022-03-25
-*/
 
-/**
- *Submitted for verification at BscScan.com on 2020-09-02
-*/
-
-pragma solidity 0.6.12;
+pragma solidity 0.8.7;
 
 interface IBEP20 {
   /**
@@ -364,8 +357,7 @@ contract Kaoya is Context, IBEP20, Ownable {
     _name = tokenName;
     _symbol = tokenSymbol;
     _decimals = tokenDecimals;
-    _totalSupply = totalSupply;
-    _balances[msg.sender] = _totalSupply;
+    _mint(msg.sender,totalSupply);
     _owner = msg.sender;
     initialized = true;
   }
