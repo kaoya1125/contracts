@@ -1,11 +1,3 @@
-/**
- *Submitted for verification at BscScan.com on 2022-03-25
-*/
-
-/**
- *Submitted for verification at BscScan.com on 2021-02-26
-*/
-
 // File: contracts/interfaces/IUniswapV2Factory.sol
 
 pragma solidity >=0.5.0;
