@@ -252,7 +252,7 @@ contract Staking is Ownable {
         // staking pool
         poolInfo = PoolInfo({
             stakeToken: _stakeToken,
-            lastRewardBlock: _startBlock,
+            lastRewardBlock: _startBlock>block.number?_startBlock:block.number,
             accRewardTokenPerShare: 0
         });
     }
@@ -341,7 +341,11 @@ contract Staking is Ownable {
         PoolInfo storage pool = poolInfo;
         UserInfo storage user = userInfo[msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
+        
         updatePool();
+        if(user.amount-_amount <threshold)
+            user.depositTime = 0;
+
         uint256 pending = user.amount.mul(pool.accRewardTokenPerShare).div(1e12).sub(user.rewardDebt);
         if(pending > 0) {
             payRefFees(pending);
@@ -354,8 +358,6 @@ contract Staking is Ownable {
             pool.stakeToken.safeTransfer(address(msg.sender), _amount);
         }
         user.rewardDebt = user.amount.mul(pool.accRewardTokenPerShare).div(1e12);
-        if(user.amount<threshold)
-            user.depositTime = 0;
 
         emit Withdraw(msg.sender, _amount);
     }
@@ -382,17 +384,23 @@ contract Staking is Ownable {
     function emergencyWithdraw() public {
         PoolInfo storage pool = poolInfo;
         UserInfo storage user = userInfo[msg.sender];
-        pool.stakeToken.safeTransfer(address(msg.sender), user.amount);
+        // pool.stakeToken.safeTransfer(address(msg.sender), user.amount);
+        // emit EmergencyWithdraw(msg.sender, user.amount);
+        // user.amount = 0;
+        // user.rewardDebt = 0;
+        uint256 amount = user.amount;
+        user.amount = 0; 
+        user.rewardDebt = 0; 
+        user.depositTime = 0;
+        pool.stakeToken.safeTransfer(address(msg.sender),amount);
         emit EmergencyWithdraw(msg.sender, user.amount);
-        user.amount = 0;
-        user.rewardDebt = 0;
     }
 
     /* Withdraw reward to the treasury.
      Because of the referrals its hard to calculate exact reward tokens needed to be reserved for rewards.
      For that reason owner will provide 115% of the value and can withdraw remaining tokens 10 days after farm is closed*/
     function rewardWithdraw() public onlyOwner {
-        require(endBlock <= block.number + 288000, "It too early to withdraw reward tokens"); //10 days
+        require(endBlock <= block.number - 288000, "It too early to withdraw reward tokens"); //10 days
         uint256 balance = rewardToken.balanceOf(address(this));
         rewardToken.safeTransfer(divPoolAddress, balance);
         emit RewardWithdraw(msg.sender, balance);
@@ -417,7 +425,7 @@ contract Staking is Ownable {
     }
     function clearUserDepositTime(address user) public {
         require(msg.sender==airdropContract,"can't clear");
-        UserInfo memory result = userInfo[user];
+        UserInfo storage result = userInfo[user];
         result.depositTime = 0; 
     }
     function setAirDropContract(address _airdrop) onlyOwner public{
