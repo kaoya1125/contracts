@@ -389,7 +389,7 @@ contract Staking is Ownable {
         user.rewardDebt = 0; 
         user.depositTime = 0;
         pool.stakeToken.safeTransfer(address(msg.sender),amount);
-        emit EmergencyWithdraw(msg.sender, user.amount);
+        emit EmergencyWithdraw(msg.sender, amount);
     }
 
     /* Withdraw reward to the treasury.
