@@ -195,7 +195,7 @@ contract Staking is Ownable {
     IBEP20 public immutable rewardToken;
 
     // Token reward created per block.
-    uint256 public immutable rewardPerBlock;
+    uint256 public rewardPerBlock;
 
     // Info of pool.
     PoolInfo public poolInfo;
@@ -258,6 +258,9 @@ contract Staking is Ownable {
     }
     function setThreshold(uint _threshold) external onlyOwner{
         threshold = _threshold;
+    }
+    function setRewardPerBlock(uint256 _rewardPerBlock){
+        rewardPerBlock = _rewardPerBlock;
     }
 
     // Return reward multiplier over the given _from to _to block.
