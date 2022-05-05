@@ -36,8 +36,7 @@ contract airdrop is Ownable{
         uint diff = block.timestamp - userInfo.depositTime;
         require(diff>period,"not reach the period");
         IStaking(poolAddress).clearUserDepositTime(msg.sender);
-        if(diff>period)
-            _sendAirdrop(payable(msg.sender));
+        _sendAirdrop(payable(msg.sender));
     }
     function _sendAirdrop(address payable user) internal{
         user.transfer(10*1e18);
