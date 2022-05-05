@@ -384,10 +384,6 @@ contract Staking is Ownable {
     function emergencyWithdraw() public {
         PoolInfo storage pool = poolInfo;
         UserInfo storage user = userInfo[msg.sender];
-        // pool.stakeToken.safeTransfer(address(msg.sender), user.amount);
-        // emit EmergencyWithdraw(msg.sender, user.amount);
-        // user.amount = 0;
-        // user.rewardDebt = 0;
         uint256 amount = user.amount;
         user.amount = 0; 
         user.rewardDebt = 0; 
