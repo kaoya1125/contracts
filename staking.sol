@@ -259,7 +259,7 @@ contract Staking is Ownable {
     function setThreshold(uint _threshold) external onlyOwner{
         threshold = _threshold;
     }
-    function setRewardPerBlock(uint256 _rewardPerBlock){
+    function setRewardPerBlock(uint256 _rewardPerBlock) external onlyOwner{
         rewardPerBlock = _rewardPerBlock;
     }
 
